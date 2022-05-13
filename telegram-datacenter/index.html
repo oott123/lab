@@ -20,14 +20,14 @@
   <h1>我的 Telegram 账号在哪个 DC ？</h1>
   <p>众所周知，Telegram 宣称自己有 5 个数据中心，但事实上只有三个物理地址。</p>
   <p>我们通过 Telegram login 获取用户的头像地址，然后从头像重定向的域名来判断用户的数据中心。</p>
-  <p>如果你在 DC2 或者 DC3，本测试脚本可能显示为 DC4 与 DC1。这是因为 DC2/3 是由 DC4/1 提供 web 服务的，有推测认为这两个数据中心是用于辅助或备份 4/1 的。</p>
+  <p>由于 DC2/3 是由 DC4/1 提供 web 服务的，根据已有信息，我们无法推测你实际属于其中的哪个 DC。</p>
   <details>
     <summary>你说什么头像域名？</summary>
     <p>比如你访问 <a href="https://t.me/durov">https://t.me/durov</a>，然后你会发现它头像的 URL 是 https://cdn1.telegram-cdn.org 开头的。
       <br>这说明，这张图片存储在 DC1 的服务器上。
       <br>而头像通常和用户在同一个 DC，所以看头像的域名就可以知道用户所在的 DC 了。
       <br>而 Telegram Login Widget 返回的头像地址其实是 t.me 开头的，这就需要先访问它，得到重定向的地址。
-      <br>由于 t.me 没有设置 CORS 策略，这听起来不太可能，但我们用一些 trick 还是做到了。技术细节请自行查看源码。</p>
+      <br>由于 t.me 没有设置 CORS 策略，这听起来不太可能，不过配合 iframe 和 CSP，利用浏览器的一些侧信道泄漏，我们还是可以做到这一点。</p>
   </details>
   <p>使用该页面你不需要有用户名，但你需要<strong>有头像，并设置为对 Everyone 可见</strong>。</p>
   <p>如果想换账号，请到 Telegram 客户端中点击 Terminate session 。</p>
@@ -69,7 +69,9 @@
       </tr>
     </tbody>
   </table>
-  <p>为了你的隐私安全，本页没有追踪代码，所有测试均在你的浏览器中运行。<br>如果你发现你的头像显示在 DC2 或 DC3，欢迎与我<a href="https://t.me/oott123">取得联系</a>。</p>
+  <p>为了你的隐私安全，本页没有追踪代码，所有测试均在你的浏览器中运行。<br>所有信息的使用都遵守 Telegram 提供的 Login Widget 功能限制。</p>
+  <p>拓展阅读：<a href="https://blog.hertz.zone/2021-11-07_TGDC" target="_blank" rel="noopener noreferrer">Telegram DC 分析报告 | Hertz Blog</a>,
+    <a href="https://dev.moe/2564" target="_blank" rel="noopener noreferrer">Telegram DC 之都市传说 - Coxxs</a>。
   <p>Created by <a href="https://oott123.com" target="_blank" rel="noopener noreferrer">oott123</a>. 如果觉得有帮助，<a href="https://dun.mianbaoduo.com/@oott123" target="_blank" rel="noopener noreferrer">请我吃饭</a>。</p>
 <script type="text/javascript">
   function onTelegramAuth(user) {
@@ -104,6 +106,7 @@
         writeDcTestResult(dcResult[0]);
       } else {
         writeMessage('测试结果认为你可能在 ' + dcResult.join(', ') + ' 中的一个。');
+        dcResult.map(highLightDC);
       }
     }
   });
@@ -141,7 +144,19 @@
   const messageEl = document.getElementById('message');
 
   function writeDcTestResult(dc) {
-    writeMessage(`测试运行完毕，我们认为你在 DC${dc}。`);
+    const dcMap = {
+      1: [1, 3],
+      2: [2],
+      3: [3],
+      4: [4, 2],
+      5: [5],
+    };
+    const dcs = dcMap[dc];
+    writeMessage(`测试完成，我们认为你在 DC${dcs.join('或')}。`);
+    dcs.map(highLightDC);
+  }
+
+  function highLightDC(dc) {
     const row = document.querySelector(`[data-dc="${dc}"]`);
     if (row) {
       row.classList.add('current');
