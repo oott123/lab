@@ -152,7 +152,7 @@
       5: [5],
     };
     const dcs = dcMap[dc];
-    writeMessage(`测试完成，我们认为你在 DC${dcs.join('或')}。`);
+    writeMessage(`测试完成，我们认为你在 ${dcs.map(dc => `DC${dc}`).join(' 或 ')}。`);
     dcs.map(highLightDC);
   }
 
